@@ -1,7 +1,7 @@
 package com.assignments.org.demo.security;
 
 import com.assignments.org.demo.entities.Role;
-import com.assignments.org.demo.entities.UserEntity;
+import com.assignments.org.demo.entities.AppUser;
 import com.assignments.org.demo.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
@@ -29,7 +29,7 @@ public class CustomUserDetailService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        UserEntity user =userRepository.findByUsername(username).orElseThrow(()-> new UsernameNotFoundException("Username Not found:"+username));
+        AppUser user =userRepository.findByUsername(username).orElseThrow(()-> new UsernameNotFoundException("Username Not found:"+username));
         return new User(user.getUsername(),user.getPassword(),mapRolesToAuthorities(user.getRoles()));
     }
 

@@ -1,17 +1,20 @@
 package com.assignments.org.demo.controllers;
 
+import com.assignments.org.demo.dto.AuthResponseDto;
 import com.assignments.org.demo.dto.LoginDto;
 import com.assignments.org.demo.dto.RegisterDto;
 import com.assignments.org.demo.entities.Role;
-import com.assignments.org.demo.entities.UserEntity;
+import com.assignments.org.demo.entities.AppUser;
 import com.assignments.org.demo.repositories.RoleRepository;
 import com.assignments.org.demo.repositories.UserRepository;
+import com.assignments.org.demo.security.JwtTokenGenerator;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,13 +27,16 @@ public class AuthController {
     private UserRepository userRepository;
     private RoleRepository roleRepository;
     private PasswordEncoder passwordEncoder;
+    private JwtTokenGenerator jwtTokenGenerator;
 
     @Autowired
-    public AuthController(AuthenticationManager authenticationManager, UserRepository userRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
+    public AuthController(AuthenticationManager authenticationManager, UserRepository userRepository,
+                          RoleRepository roleRepository, PasswordEncoder passwordEncoder, JwtTokenGenerator jwtTokenGenerator) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.jwtTokenGenerator=jwtTokenGenerator;
     }
 
     @GetMapping("/start")
@@ -48,7 +54,7 @@ public class AuthController {
         if(userRepository.existsByUsername(registerDto.getUsername())){
             return new ResponseEntity<>("Username is taken", HttpStatus.BAD_REQUEST);
         }
-        UserEntity user=new UserEntity();
+        AppUser user=new AppUser();
         user.setUsername(registerDto.getUsername());
         user.setPassword(passwordEncoder.encode(registerDto.getPassword()));
 
@@ -59,17 +65,16 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody LoginDto loginDto){
+    public ResponseEntity<AuthResponseDto> login(@RequestBody LoginDto loginDto){
 
         Authentication authentication =authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(loginDto.getUsername(),loginDto.getPassword()));
-        if(userRepository.existsByUsername(loginDto.getUsername())){
-            userRepository.findByUsername(loginDto.getUsername());
+                new UsernamePasswordAuthenticationToken(loginDto.getUsername(),
+                        loginDto.getPassword()));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+
+        String token=jwtTokenGenerator.generateToken(authentication);
+
+        return new ResponseEntity<>(new AuthResponseDto(token),HttpStatus.OK);
         }
-        else{
-            return new ResponseEntity<>("Username not found",HttpStatus.NOT_FOUND);
-        }
-        return new ResponseEntity<>("Logged In",HttpStatus.ACCEPTED);
-    }
 
 }

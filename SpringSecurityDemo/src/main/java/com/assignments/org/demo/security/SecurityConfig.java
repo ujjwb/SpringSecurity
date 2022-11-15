@@ -14,6 +14,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 public class SecurityConfig {
@@ -40,11 +41,15 @@ public class SecurityConfig {
                 .and()
 
                 .authorizeRequests()
+                .antMatchers("/customer").hasRole("Customer")
+                .antMatchers("/Seller").hasRole("Seller")
+                .antMatchers("/admin").hasRole("Admin")
                 .antMatchers("/myapp/**").permitAll()
                 .anyRequest().authenticated()
                 .and()
 
                 .httpBasic();
+        http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
@@ -59,5 +64,9 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
+    @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter(){
+        return new JwtAuthenticationFilter();
+    }
 
 }
